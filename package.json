@@ -1,7 +1,7 @@
 {
   "name": "pi-packages-manager",
-  "version": "0.1.0",
-  "description": "A Pi packages manager extension for browsing, searching, installing, updating, and removing Pi packages.",
+  "version": "1.0.0",
+  "description": "Claude-style Pi packages manager: browse, search, install, update, and remove Pi packages from inside Pi.",
   "type": "module",
   "keywords": [
     "pi-package",
@@ -9,10 +9,28 @@
     "packages-manager",
     "package-manager",
     "plugin-manager",
-    "extension"
+    "extension",
+    "tui",
+    "overlay"
   ],
   "license": "MIT",
   "author": "RexYoung000",
+  "homepage": "https://github.com/RexYoung000/pi-packages-manager#readme",
+  "bugs": {
+    "url": "https://github.com/RexYoung000/pi-packages-manager/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RexYoung000/pi-packages-manager.git"
+  },
+  "files": [
+    "src",
+    "docs",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "pi": {
     "extensions": [
       "./src/index.ts"
@@ -23,6 +41,7 @@
     "@earendil-works/pi-tui": "*"
   },
   "scripts": {
-    "test:load": "pi -e ./src/index.ts --version"
+    "test:load": "pi -e ./src/index.ts --version",
+    "pack:dry": "npm pack --dry-run"
   }
 }
