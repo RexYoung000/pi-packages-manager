@@ -33,14 +33,18 @@ import {
   detectLocale,
   getTranslatedDescription,
   localizeType,
+  SUPPORTED_LOCALES,
   t,
 } from "./i18n";
+import { loadStoredLocale, saveLocale } from "./locale";
 import { showPackagesPanel } from "./ui/panel";
 
 const PAGE_SIZE = 8;
 
 export default function pluginManager(pi: ExtensionAPI) {
-  const locale = detectLocale();
+  // Apply persisted locale (project > global) before reading any UI strings.
+  loadStoredLocale(process.cwd());
+  let locale = detectLocale();
 
   pi.registerCommand("packages-list", {
     description: t("command.description", locale),
@@ -61,6 +65,8 @@ export default function pluginManager(pi: ExtensionAPI) {
       return filtered.length > 0 ? filtered : null;
     },
     handler: async (args, ctx) => {
+      // Re-detect in case it was changed in another panelLoop session.
+      locale = detectLocale();
       const parts = (args || "").trim().split(/\s+/);
       const sub = parts[0];
       const rest = parts.slice(1).join(" ");
@@ -142,7 +148,7 @@ export default function pluginManager(pi: ExtensionAPI) {
    */
   async function panelLoop(ctx: ExtensionCommandContext) {
     while (true) {
-      const result = await showPackagesPanel(ctx, locale);
+      const result = await showPackagesPanel(ctx, { locale });
       if (!result) return;
 
       if (result.action === "detail") {
@@ -154,9 +160,17 @@ export default function pluginManager(pi: ExtensionAPI) {
         continue;
       }
       if (result.action === "settings-config") {
+        ctx.ui.notify(t("settings.tip.config", locale), "info");
+        continue;
+      }
+      if (result.action === "change-locale") {
+        saveLocale(result.locale);
+        locale = result.locale;
+        const labelEntry = SUPPORTED_LOCALES.find((entry) => entry.code === result.locale);
+        const label = labelEntry?.label ?? result.locale;
         ctx.ui.notify(
-          "Run `pi config` in your terminal to enable or disable extensions, skills, prompts, and themes.",
-          "info",
+          `${t("settings.locale.changed", result.locale)} ${label}`,
+          "success",
         );
         continue;
       }

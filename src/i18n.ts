@@ -20,13 +20,40 @@ const TRANSLATIONS_FILE = join(DATA_DIR, "translations.json");
 
 export type Locale = "zh-CN" | "zh-TW" | "en" | "ja" | "ko" | string;
 
-export function detectLocale(): Locale {
+export const SUPPORTED_LOCALES: { code: Locale; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "zh-CN", label: "简体中文" },
+  { code: "zh-TW", label: "繁體中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+];
+
+function detectSystemLocale(): Locale {
   try {
     const locale = Intl.DateTimeFormat().resolvedOptions().locale;
     return locale;
   } catch {
     return "en";
   }
+}
+
+// In-memory override applied via Settings.
+let localeOverride: Locale | undefined;
+
+export function setLocaleOverride(locale: Locale | undefined): void {
+  localeOverride = locale;
+}
+
+export function getLocaleOverride(): Locale | undefined {
+  return localeOverride;
+}
+
+/**
+ * Resolve the locale to use.
+ * Priority: user override (Settings) > system detection.
+ */
+export function detectLocale(): Locale {
+  return localeOverride || detectSystemLocale();
 }
 
 export function shouldTranslate(locale?: Locale): boolean {
@@ -303,6 +330,20 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     // keyword search
     "keyword.title": "🔍 搜索插件",
     "keyword.placeholder": "输入关键词，如：memory、browser、telegram",
+    // panel
+    "panel.tab.installed": "已安装",
+    "panel.tab.browse": "社区",
+    "panel.tab.updates": "更新",
+    "panel.tab.settings": "设置",
+    "panel.help.base": "Tab/⇧Tab 切换 · ↑↓ 选择 · ↵ 详情 · Esc 关闭",
+    "panel.help.search": "/ 搜索",
+    "panel.help.config": "g 运行 pi config",
+    "panel.empty.installed": "尚未安装任何插件。",
+    "panel.empty.browse": "正在加载社区插件...（按 Tab 切换）",
+    "panel.empty.updates": "正在检查更新...（按 Tab 切换）",
+    "settings.section.language": "语言",
+    "settings.tip.config": "提示：在终端运行 `pi config` 可启用 / 禁用扩展、技能、提示词、主题。",
+    "settings.locale.changed": "语言已切换为",
   },
   // ── 繁體中文 ──
   "zh-TW": {
@@ -379,6 +420,19 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "ai.error": "AI 搜尋失敗",
     "keyword.title": "🔍 搜尋插件",
     "keyword.placeholder": "輸入關鍵詞，如：memory、browser、telegram",
+    "panel.tab.installed": "已安裝",
+    "panel.tab.browse": "社群",
+    "panel.tab.updates": "更新",
+    "panel.tab.settings": "設定",
+    "panel.help.base": "Tab/⇧Tab 切換 · ↑↓ 選擇 · ↵ 詳情 · Esc 關閉",
+    "panel.help.search": "/ 搜尋",
+    "panel.help.config": "g 執行 pi config",
+    "panel.empty.installed": "尚未安裝任何套件。",
+    "panel.empty.browse": "正在載入社群套件...（按 Tab 切換）",
+    "panel.empty.updates": "正在檢查更新...（按 Tab 切換）",
+    "settings.section.language": "語言",
+    "settings.tip.config": "提示：在終端執行 `pi config` 可啟用 / 停用擴充、技能、提示詞、主題。",
+    "settings.locale.changed": "語言已切換為",
   },
   // ── English ──
   "en": {
@@ -455,6 +509,19 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "ai.error": "AI search failed",
     "keyword.title": "🔍 Search Plugins",
     "keyword.placeholder": "Enter keywords, e.g.: memory, browser, telegram",
+    "panel.tab.installed": "Installed",
+    "panel.tab.browse": "Browse",
+    "panel.tab.updates": "Updates",
+    "panel.tab.settings": "Settings",
+    "panel.help.base": "Tab/⇧Tab switch · ↑↓ navigate · ↵ detail · Esc close",
+    "panel.help.search": "/ search",
+    "panel.help.config": "g run pi config",
+    "panel.empty.installed": "No packages installed yet.",
+    "panel.empty.browse": "Loading community catalog... (press Tab to switch)",
+    "panel.empty.updates": "Checking for updates... (press Tab to switch)",
+    "settings.section.language": "Language",
+    "settings.tip.config": "Tip: run `pi config` in your terminal to enable/disable extensions, skills, prompts, and themes.",
+    "settings.locale.changed": "Language switched to",
   },
   // ── 日本語 ──
   "ja": {
@@ -531,6 +598,19 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "ai.error": "AI検索に失敗しました",
     "keyword.title": "🔍 プラグイン検索",
     "keyword.placeholder": "キーワードを入力、例：memory、browser、telegram",
+    "panel.tab.installed": "インストール済",
+    "panel.tab.browse": "コミュニティ",
+    "panel.tab.updates": "更新",
+    "panel.tab.settings": "設定",
+    "panel.help.base": "Tab/⇧Tab 切替 · ↑↓ 選択 · ↵ 詳細 · Esc 閉じる",
+    "panel.help.search": "/ 検索",
+    "panel.help.config": "g pi config を実行",
+    "panel.empty.installed": "インストール済みパッケージはありません。",
+    "panel.empty.browse": "コミュニティカタログを読み込み中...（Tab で切替）",
+    "panel.empty.updates": "更新を確認中...（Tab で切替）",
+    "settings.section.language": "言語",
+    "settings.tip.config": "ヒント: ターミナルで `pi config` を実行して拡張・スキル・プロンプト・テーマを制御します。",
+    "settings.locale.changed": "言語を切り替えました:",
   },
   // ── 한국어 ──
   "ko": {
@@ -607,6 +687,19 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "ai.error": "AI 검색 실패",
     "keyword.title": "🔍 플러그인 검색",
     "keyword.placeholder": "키워드 입력, 예: memory, browser, telegram",
+    "panel.tab.installed": "설치됨",
+    "panel.tab.browse": "커뮤니티",
+    "panel.tab.updates": "업데이트",
+    "panel.tab.settings": "설정",
+    "panel.help.base": "Tab/⇧Tab 전환 · ↑↓ 선택 · ↵ 상세 · Esc 닫기",
+    "panel.help.search": "/ 검색",
+    "panel.help.config": "g pi config 실행",
+    "panel.empty.installed": "설치된 패키지가 없습니다.",
+    "panel.empty.browse": "커뮤니티 카탈로그를 로드 중...（Tab으로 전환）",
+    "panel.empty.updates": "업데이트 확인 중...（Tab으로 전환）",
+    "settings.section.language": "언어",
+    "settings.tip.config": "팁: 터미널에서 `pi config`를 실행하여 확장/스킬/프롬프트/테마를 활성화/비활성화하세요.",
+    "settings.locale.changed": "언어가 다음으로 전환되었습니다:",
   },
 };
 
