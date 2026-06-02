@@ -164,7 +164,7 @@ export default function pluginManager(pi: ExtensionAPI) {
       const typeLabels = pkg.types?.map((tp) => localizeType(tp, locale)).join(", ") || "";
       const version = pkg.installedVersion ? `  v${pkg.installedVersion}` : "";
       if (i > 0) items.push("");  // 空行分隔
-      items.push(`${circleNum(i + 1)} ${pkg.name}${version}${typeLabels ? `  [${typeLabels}]` : ""}\n    ${desc}`);
+      items.push(`${circleNum(i + 1)} ${pkg.name}${version}${typeLabels ? `  [${typeLabels}]` : ""}${formatMeta(pkg)}\n    ${desc}`);
     });
 
     const selected = await ctx.ui.select(
@@ -240,7 +240,9 @@ export default function pluginManager(pi: ExtensionAPI) {
         const desc = getTranslatedDescription(pkg.name, pkg.description, locale);
         const badge = pkg.installed ? " ✅" : "";
         const dl = pkg.downloads ? `  (${formatNumber(pkg.downloads)}/mo)` : "";
-        pluginOpts.push(`${circleNum(start + i + 1)} ${pkg.name}${badge}${dl}\n    ${desc}`);
+        const meta = formatMeta(pkg);
+        const reasons = pkg.searchReasons?.length ? `\n    match: ${pkg.searchReasons.slice(0, 3).join(", ")}` : "";
+        pluginOpts.push(`${circleNum(start + i + 1)} ${pkg.name}${badge}${dl}${meta}\n    ${desc}${reasons}`);
       });
 
       // ── 2. 构建操作区 ──
@@ -372,6 +374,9 @@ export default function pluginManager(pi: ExtensionAPI) {
       lines.push(`⬆️  ${t("detail.update", locale)}: ${info.installedVersion} → ${info.latestVersion}`);
     }
 
+    if (info.source) lines.push(`source: ${info.source}`);
+    if (info.sourceType || info.scope) lines.push(`scope: ${[info.scope, info.sourceType].filter(Boolean).join(" · ")}`);
+    if (info.searchReasons?.length) lines.push(`match: ${info.searchReasons.join(", ")}`);
     if (info.version) lines.push(`${t("detail.version", locale)}: ${info.version}`);
     if (info.latestVersion && !info.installed) lines.push(`${t("detail.latest", locale)}: ${info.latestVersion}`);
     if (info.author) lines.push(`${t("detail.author", locale)}: ${info.author}`);
@@ -575,6 +580,11 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
+function formatMeta(pkg: PackageInfo): string {
+  const parts = [pkg.scope, pkg.sourceType].filter(Boolean);
+  return parts.length ? `  · ${parts.join("/")}` : "";
+}
+
 /** 编号圆圈 1-20 */
 function circleNum(n: number): string {
   const circles = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"];
@@ -589,7 +599,12 @@ function refreshInstallStatus(items: PackageInfo[]): void {
     item.installed = installedNames.has(item.name);
     if (item.installed) {
       const found = installed.find((p) => p.name === item.name);
-      if (found) item.installedVersion = found.installedVersion;
+      if (found) {
+        item.installedVersion = found.installedVersion;
+        item.scope = found.scope;
+        item.source = found.source || item.source;
+        item.sourceType = found.sourceType || item.sourceType;
+      }
     }
   }
 }

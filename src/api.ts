@@ -4,15 +4,18 @@
  * 数据获取层：npm registry 搜索 + 已安装包读取 + AI 语义搜索
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { execFileSync, execSync } from "node:child_process";
+import { rankPackages, parsePackageQuery, type Scope, type SourceType } from "./search";
 
 const HOME = process.env.HOME!;
 const SETTINGS_FILE = join(HOME, ".pi/agent/settings.json");
 const NPM_DIR = join(HOME, ".pi/agent/npm/node_modules");
 const PROJECT_SETTINGS_FILE = join(process.cwd(), ".pi/settings.json");
 const PROJECT_NPM_DIR = join(process.cwd(), ".pi/npm/node_modules");
+const CACHE_FILE = join(HOME, ".pi/agent/cache/pi-package-manager/catalog.json");
+const CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -20,17 +23,23 @@ export interface PackageInfo {
   name: string;
   description: string;
   version: string;
+  source?: string;
+  sourceType?: SourceType;
+  scope?: Scope;
   latestVersion?: string;
   author?: string;
   license?: string;
   keywords?: string[];
-  types?: string[];       // "extension" | "skill" | "prompt" | "package"
+  types?: string[];       // "extension" | "skill" | "prompt" | "theme" | "package"
   downloads?: number;
+  updatedAt?: string;
   installed: boolean;
   installedVersion?: string;
   npmUrl?: string;
   repoUrl?: string;
   piManifest?: Record<string, unknown>;
+  searchScore?: number;
+  searchReasons?: string[];
 }
 
 // ─── 已安装包 ────────────────────────────────────────────
@@ -49,7 +58,7 @@ export function getInstalledPackages(): PackageInfo[] {
       const npmDir = scope === "project" ? PROJECT_NPM_DIR : NPM_DIR;
       const pkgJsonPath = join(npmDir, pkgName, "package.json");
       if (!existsSync(pkgJsonPath)) {
-        results.push(createFallbackPackage(ref, pkgName, true));
+        results.push({ ...createFallbackPackage(ref, pkgName, true), scope });
         continue;
       }
 
@@ -61,6 +70,9 @@ export function getInstalledPackages(): PackageInfo[] {
           name: pkg.name || pkgName,
           description: pkg.description || "",
           version: pkg.version || "unknown",
+          source: ref,
+          sourceType: "npm",
+          scope,
           author: pkg.author?.name || pkg.author || "",
           license: pkg.license || "",
           keywords: pkg.keywords || [],
@@ -72,16 +84,16 @@ export function getInstalledPackages(): PackageInfo[] {
           piManifest: pkg.pi || {},
         });
       } catch {
-        results.push(createFallbackPackage(ref, pkgName, true));
+        results.push({ ...createFallbackPackage(ref, pkgName, true), scope });
       }
       continue;
     }
 
     const localPackage = readLocalPackage(ref);
     if (localPackage) {
-      results.push(localPackage);
+      results.push({ ...localPackage, source: ref, sourceType: detectSourceType(ref), scope });
     } else {
-      results.push(createFallbackPackage(ref, ref, true));
+      results.push({ ...createFallbackPackage(ref, ref, true), scope });
     }
   }
 
@@ -100,19 +112,33 @@ let catalogCache: PackageInfo[] | null = null;
 
 export function clearCatalogCache(): void {
   catalogCache = null;
+  try {
+    writeFileSync(CACHE_FILE, JSON.stringify({ fetchedAt: 0, packages: [] }, null, 2), "utf-8");
+  } catch {
+    // ignore cache clear failures
+  }
 }
 
 /**
- * 预取社区插件目录（多查询合并去重，按下载量排序）。
- * 查询 "pi-coding-agent" + "pi-extension" + "pi-skill" 覆盖主流命名。
+ * 预取社区插件目录（多查询合并去重，按相关性/下载量排序）。
+ * 优先使用 Pi 官方推荐的 pi-package keyword，再补充 extension/skill 和历史关键词。
  */
-export async function fetchFullCatalog(size = 250): Promise<PackageInfo[]> {
-  if (catalogCache) return catalogCache;
+export async function fetchFullCatalog(size = 250, forceRefresh = false): Promise<PackageInfo[]> {
+  if (!forceRefresh && catalogCache) return catalogCache;
+
+  if (!forceRefresh) {
+    const cached = readCatalogCache();
+    if (cached) {
+      catalogCache = mergeInstalledState(cached);
+      return catalogCache;
+    }
+  }
 
   const queries = [
-    "pi-coding-agent",
+    "keywords:pi-package",
     "keywords:pi-extension",
     "keywords:pi-skill",
+    "pi-coding-agent",
   ];
 
   const allResults: PackageInfo[] = [];
@@ -132,39 +158,50 @@ export async function fetchFullCatalog(size = 250): Promise<PackageInfo[]> {
     }
   }
 
-  // Sort by downloads descending
-  allResults.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-
-  catalogCache = allResults;
-  return allResults;
+  const ranked = rankPackages(allResults, "", size);
+  catalogCache = ranked;
+  writeCatalogCache(ranked);
+  return ranked;
 }
 
 // ─── npm Registry 搜索（关键词）─────────────────────────
 
 export async function searchNpmRegistry(query: string, size = 20): Promise<PackageInfo[]> {
-  // Two-pass: narrow search first, broader fallback
-  const searchTerm = query
-    ? `${query} pi-coding-agent`
-    : "pi-coding-agent";
-  const url = `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchTerm)}&size=${size}`;
-  let response = await fetch(url);
-  if (!response.ok) throw new Error(`npm search failed: ${response.status}`);
+  const parsed = parsePackageQuery(query);
+  const registryQuery = parsed.terms.join(" ").trim();
+  const catalog = await fetchFullCatalog(Math.max(size, 250));
+  const localResults = rankPackages(catalog, query, size);
 
-  let data = await response.json() as NpmSearchResponse;
+  // If local catalog has enough relevant results, avoid extra registry calls.
+  if (localResults.length >= Math.min(size, 10)) return localResults;
 
-  // Fallback: if no results with pi-coding-agent suffix, try without it
-  if (data.objects.length === 0 && query) {
-    const fallbackUrl = `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(query)}&size=${size}`;
-    response = await fetch(fallbackUrl);
-    if (response.ok) {
-      data = await response.json() as NpmSearchResponse;
+  const queryVariants = registryQuery
+    ? [
+        `${registryQuery} keywords:pi-package`,
+        `${registryQuery} keywords:pi-extension`,
+        `${registryQuery} keywords:pi-skill`,
+        `${registryQuery} pi-coding-agent`,
+        registryQuery,
+      ]
+    : ["keywords:pi-package", "keywords:pi-extension", "keywords:pi-skill", "pi-coding-agent"];
+
+  const allResults = [...localResults];
+  const seen = new Set(allResults.map((p) => p.name));
+
+  for (const text of queryVariants) {
+    try {
+      const results = await rawNpmSearch(text, size);
+      for (const pkg of results) {
+        if (seen.has(pkg.name)) continue;
+        seen.add(pkg.name);
+        allResults.push(pkg);
+      }
+    } catch {
+      // continue with other variants
     }
   }
 
-  const installedPkgs = getInstalledPackages();
-  const installedNames = new Set(installedPkgs.map((p) => p.name));
-
-  return data.objects.map((obj) => mapNpmObject(obj, installedPkgs, installedNames));
+  return rankPackages(allResults, query, size);
 }
 
 // ─── npm 包详情 ─────────────────────────────────────────
@@ -196,6 +233,9 @@ export async function getPackageDetail(pkgName: string): Promise<PackageInfo | n
       description: (pkgJson.description as string) || "",
       version: latest || "",
       latestVersion: latest,
+      source: `npm:${npmName}`,
+      sourceType: "npm",
+      scope: installedPkgs.find((p) => p.name === npmName)?.scope,
       author: typeof authorObj === "string" ? authorObj : authorObj?.name || "",
       license: (pkgJson.license as string) || "",
       keywords: (pkgJson.keywords as string[]) || [],
@@ -450,6 +490,7 @@ interface NpmSearchResponse {
       name: string;
       description?: string;
       version: string;
+      date?: string;
       author?: { name?: string } | string;
       keywords?: string[];
       links?: { npm?: string; repository?: string };
@@ -483,17 +524,68 @@ function mapNpmObject(
     name: pkg.name,
     description: pkg.description || "",
     version: pkg.version,
+    source: `npm:${pkg.name}`,
+    sourceType: "npm",
     author: authorName || "",
     keywords: pkg.keywords || [],
-    types: [],
+    types: inferTypesFromKeywords(pkg.keywords || []),
     downloads: obj.downloads?.monthly,
+    updatedAt: pkg.date,
     installed: installedNames.has(pkg.name),
     installedVersion: installedNames.has(pkg.name)
       ? installedPkgs.find((p) => p.name === pkg.name)?.installedVersion
       : undefined,
+    scope: installedPkgs.find((p) => p.name === pkg.name)?.scope,
     npmUrl: pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`,
     repoUrl: pkg.links?.repository || "",
   };
+}
+
+// ─── Catalog cache ─────────────────────────────────────
+
+interface CatalogCacheFile {
+  fetchedAt: number;
+  packages: PackageInfo[];
+}
+
+function readCatalogCache(): PackageInfo[] | null {
+  try {
+    if (!existsSync(CACHE_FILE)) return null;
+    const cache = JSON.parse(readFileSync(CACHE_FILE, "utf-8")) as CatalogCacheFile;
+    if (!cache.fetchedAt || !Array.isArray(cache.packages)) return null;
+    if (Date.now() - cache.fetchedAt > CATALOG_CACHE_TTL_MS) return null;
+    return cache.packages;
+  } catch {
+    return null;
+  }
+}
+
+function writeCatalogCache(packages: PackageInfo[]): void {
+  try {
+    mkdirSync(dirname(CACHE_FILE), { recursive: true });
+    writeFileSync(CACHE_FILE, JSON.stringify({ fetchedAt: Date.now(), packages }, null, 2), "utf-8");
+  } catch {
+    // cache is best-effort
+  }
+}
+
+function mergeInstalledState(packages: PackageInfo[]): PackageInfo[] {
+  const installedPkgs = getInstalledPackages();
+  const installedByName = new Map(installedPkgs.map((p) => [p.name, p]));
+  return packages.map((pkg) => {
+    const installed = installedByName.get(pkg.name);
+    if (!installed) return { ...pkg, installed: false, installedVersion: undefined, scope: undefined };
+    return {
+      ...pkg,
+      installed: true,
+      installedVersion: installed.installedVersion,
+      scope: installed.scope,
+      source: installed.source || pkg.source,
+      sourceType: installed.sourceType || pkg.sourceType,
+      piManifest: Object.keys(installed.piManifest || {}).length > 0 ? installed.piManifest : pkg.piManifest,
+      types: installed.types?.length ? installed.types : pkg.types,
+    };
+  });
 }
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -535,6 +627,8 @@ function readLocalPackage(ref: string): PackageInfo | null {
       name: pkg.name || ref,
       description: pkg.description || "",
       version: pkg.version || "unknown",
+      source: ref,
+      sourceType: detectSourceType(ref),
       author: pkg.author?.name || pkg.author || "",
       license: pkg.license || "",
       keywords: pkg.keywords || [],
@@ -556,6 +650,8 @@ function createFallbackPackage(ref: string, name: string, installed: boolean): P
       ? "Git/remote pi package"
       : "Pi package",
     version: "unknown",
+    source: ref,
+    sourceType: detectSourceType(ref),
     types: ["package"],
     installed,
     installedVersion: installed ? "unknown" : undefined,
@@ -578,6 +674,24 @@ function dedupePackages(packages: PackageInfo[]): PackageInfo[] {
 function resolvePackageName(ref: string): string | null {
   if (!ref.startsWith("npm:")) return null;
   return ref.slice(4);
+}
+
+function detectSourceType(ref: string): SourceType {
+  if (ref.startsWith("npm:")) return "npm";
+  if (/^(git:|https?:\/\/|ssh:\/\/)/.test(ref)) return "git";
+  if (ref.startsWith("file:") || ref.startsWith("./") || ref.startsWith("../") || ref.startsWith("/")) return "local";
+  return "unknown";
+}
+
+function inferTypesFromKeywords(keywords: string[]): string[] {
+  const lower = keywords.map((k) => k.toLowerCase());
+  const types: string[] = [];
+  if (lower.includes("pi-extension") || lower.includes("extension")) types.push("extension");
+  if (lower.includes("pi-skill") || lower.includes("skill")) types.push("skill");
+  if (lower.includes("pi-prompt") || lower.includes("prompt")) types.push("prompt");
+  if (lower.includes("pi-theme") || lower.includes("theme")) types.push("theme");
+  if (types.length === 0) types.push("package");
+  return types;
 }
 
 function normalizeNpmPackageName(input: string): string | null {
@@ -610,6 +724,7 @@ function extractTypes(pkg: Record<string, unknown>): string[] {
   if (pi?.extensions) types.push("extension");
   if (pi?.skills) types.push("skill");
   if (pi?.prompts) types.push("prompt");
+  if (pi?.themes) types.push("theme");
   if (types.length === 0) types.push("package");
   return types;
 }
@@ -620,6 +735,7 @@ function extractTypesFromManifest(pi?: Record<string, unknown>): string[] {
   if (pi.extensions) types.push("extension");
   if (pi.skills) types.push("skill");
   if (pi.prompts) types.push("prompt");
+  if (pi.themes) types.push("theme");
   if (types.length === 0) types.push("package");
   return types;
 }
