@@ -1,0 +1,27 @@
+{
+  "name": "pi-package-manager",
+  "version": "0.1.0",
+  "description": "A Pi package manager extension for browsing, searching, installing, updating, and removing Pi packages.",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "package-manager",
+    "plugin-manager",
+    "extension"
+  ],
+  "license": "MIT",
+  "author": "RexYoung000",
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "scripts": {
+    "test:load": "pi -e ./src/index.ts --version"
+  }
+}
