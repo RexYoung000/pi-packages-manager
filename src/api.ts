@@ -401,11 +401,12 @@ export function runPiInstall(pkgName: string): { success: boolean; output: strin
 }
 
 /** 异步版安装，不会冻结 UI 事件循环 */
-export async function runPiInstallAsync(pkgName: string): Promise<{ success: boolean; output: string }> {
+export async function runPiInstallAsync(pkgName: string, scope: "user" | "project" = "user"): Promise<{ success: boolean; output: string }> {
   const { execFile } = await import("node:child_process");
   const source = normalizeInstallSource(pkgName);
+  const args = scope === "project" ? ["install", "-l", source] : ["install", source];
   return new Promise((resolve) => {
-    execFile("pi", ["install", source], {
+    execFile("pi", args, {
       encoding: "utf-8",
       timeout: 120_000,
       maxBuffer: 1024 * 1024,

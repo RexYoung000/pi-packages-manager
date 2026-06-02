@@ -50,6 +50,7 @@ export default function pluginManager(pi: ExtensionAPI) {
         { value: "remove", label: t("completion.remove", locale) },
         { value: "update", label: t("completion.update", locale) },
         { value: "info", label: t("completion.info", locale) },
+        { value: "refresh", label: "Refresh package catalog" },
       ];
       const filtered = subcommands.filter((s) => s.value.startsWith(prefix));
       return filtered.length > 0 ? filtered : null;
@@ -87,6 +88,9 @@ export default function pluginManager(pi: ExtensionAPI) {
           break;
         case "info":
           await showPackageInfo(rest, ctx);
+          break;
+        case "refresh":
+          await refreshCatalog(ctx);
           break;
         default:
           ctx.ui.notify(
@@ -127,9 +131,13 @@ export default function pluginManager(pi: ExtensionAPI) {
     const options = [
       `📦 ${t("menu.installed", locale)}  (${installed.length})`,
       "",
+      `🔍 Search packages`,
+      "",
       `🏪 ${t("browse.title", locale)}`,
       "",
       `⬆️  ${t("menu.update", locale)}`,
+      "",
+      `🔄 Refresh catalog`,
     ];
 
     const choice = await ctx.ui.select(t("menu.title", locale), options);
@@ -138,10 +146,14 @@ export default function pluginManager(pi: ExtensionAPI) {
 
     if (choice.includes(t("menu.installed", locale))) {
       await listInstalled(ctx);
-    } else if (choice.includes(t("browse.title", locale)) || choice.includes("Community") || choice.includes("社区") || choice.includes("社群") || choice.includes("コミュニティ") || choice.includes("커뮤니티")) {
+    } else if (choice.includes("Search packages")) {
       await browseCommunity(ctx);
+    } else if (choice.includes(t("browse.title", locale)) || choice.includes("Community") || choice.includes("社区") || choice.includes("社群") || choice.includes("コミュニティ") || choice.includes("커뮤니티")) {
+      await browseCommunity(ctx, "");
     } else if (choice.includes(t("menu.update", locale))) {
       await updatePackages("", ctx);
+    } else if (choice.includes("Refresh catalog")) {
+      await refreshCatalog(ctx);
     }
 
     return false;
@@ -420,20 +432,34 @@ export default function pluginManager(pi: ExtensionAPI) {
     if (!pkgName.trim()) return;
 
     const installSource = normalizeInstallSource(pkgName);
+    const scopeChoice = await ctx.ui.select("Install scope", [
+      "🌍 Global — available in all Pi projects",
+      "📁 Project — write to this project's .pi/settings.json",
+      "Cancel",
+    ]);
+    if (!scopeChoice || scopeChoice === "Cancel") return;
+
+    const scope = scopeChoice.includes("Project") ? "project" : "user";
+    const command = scope === "project" ? `pi install -l ${installSource}` : `pi install ${installSource}`;
     const confirmed = await ctx.ui.confirm(
       t("install.confirm", locale),
-      `pi install ${installSource}`
+      [
+        command,
+        "",
+        "Security: Pi packages may run arbitrary code on your machine.",
+        "Only install packages from sources you trust.",
+      ].join("\n")
     );
 
     if (!confirmed) return;
 
     showLoading(ctx, `📥 ${t("install.running", locale)} ${pkgName}...`);
 
-    const result = await runPiInstallAsync(pkgName);
+    const result = await runPiInstallAsync(pkgName, scope);
 
     clearLoading(ctx);
     if (result.success) {
-      ctx.ui.notify(`✅ ${pkgName} ${t("install.success", locale)}`, "info");
+      ctx.ui.notify(`✅ ${pkgName} ${t("install.success", locale)}\nRun /reload or restart Pi to activate new resources.`, "info");
       clearCatalogCache();
     } else {
       ctx.ui.notify(`❌ ${t("install.fail", locale)}: ${result.output}`, "error");
@@ -495,7 +521,7 @@ export default function pluginManager(pi: ExtensionAPI) {
       const result = await runPiInstallAsync(pkgName);
       clearLoading(ctx);
       if (result.success) {
-        ctx.ui.notify(`✅ ${pkgName} ${t("update.success", locale)}`, "info");
+        ctx.ui.notify(`✅ ${pkgName} ${t("update.success", locale)}\nRun /reload or restart Pi to activate updated resources.`, "info");
       } else {
         ctx.ui.notify(`❌ ${t("install.fail", locale)}: ${result.output}`, "error");
       }
@@ -542,11 +568,32 @@ export default function pluginManager(pi: ExtensionAPI) {
         const result = await runPiInstallAsync(target.name);
         clearLoading(ctx);
         if (result.success) {
-          ctx.ui.notify(`✅ ${target.name} ${t("update.success", locale)}`, "info");
+          ctx.ui.notify(`✅ ${target.name} ${t("update.success", locale)}\nRun /reload or restart Pi to activate updated resources.`, "info");
         } else {
           ctx.ui.notify(`❌ ${t("install.fail", locale)}: ${result.output}`, "error");
         }
       }
+    }
+  }
+
+  // ─── 刷新目录 ───────────────────────────────────────
+
+  async function refreshCatalog(ctx: ExtensionCommandContext) {
+    const confirmed = await ctx.ui.confirm(
+      "Refresh package catalog",
+      "Clear local catalog cache and fetch the latest Pi packages from npm registry?"
+    );
+    if (!confirmed) return;
+
+    showLoading(ctx, "🔄 Refreshing package catalog...");
+    try {
+      clearCatalogCache();
+      const items = await fetchFullCatalog(250, true);
+      clearLoading(ctx);
+      ctx.ui.notify(`✅ Catalog refreshed: ${items.length} packages`, "info");
+    } catch (err) {
+      clearLoading(ctx);
+      ctx.ui.notify(`❌ Refresh failed: ${(err as Error).message}`, "error");
     }
   }
 
