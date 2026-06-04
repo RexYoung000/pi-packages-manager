@@ -3,7 +3,7 @@
 A Pi packages manager extension. Browse, search, install, update, and remove
 Pi packages without leaving Pi. Inspired by the Claude Code package UX.
 
-[English](README.md) · [简体中文](README.zh-CN.md) · [Pi Discussion](https://github.com/earendil-works/pi/discussions/5322) · [npm](https://www.npmjs.com/package/pi-packages-manager)
+[English](README.md) · [简体中文](docs/README.zh-CN.md) · [Pi Discussion](https://github.com/earendil-works/pi/discussions/5322) · [npm](https://www.npmjs.com/package/pi-packages-manager)
 
 ![status](https://img.shields.io/badge/status-1.1.0-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
