@@ -47,17 +47,20 @@ import {
 import {
   checkForUpdates,
   fetchFullCatalog,
+  getCatalogCacheInfo,
   getInstalledPackages,
   searchNpmRegistry,
   type PackageInfo,
 } from "../api";
 import {
+  formatRelativeTime,
   getTranslatedDescription,
   localizeType,
   type Locale,
   SUPPORTED_LOCALES,
   t,
 } from "../i18n";
+import { getLocaleSource } from "../locale";
 import { rankPackages } from "../search";
 import { auditPackage, RISK_BADGE } from "../security";
 import { PackageList, type PackageListItem } from "./package-list";
@@ -73,6 +76,9 @@ export type PanelResult =
   | { action: "detail"; pkg: PackageInfo }
   | { action: "browse-search" }
   | { action: "settings-config" }
+  | { action: "settings-refresh-catalog" }
+  | { action: "settings-clear-catalog" }
+  | { action: "settings-reset" }
   | { action: "change-locale"; locale: Locale }
   | null;
 
@@ -458,9 +464,23 @@ export async function showPackagesPanel(
     function renderSettingsTab() {
       list = null;
 
+      // === J4: 当前生效的偏好来源 ===
+      const localeSource = getLocaleSource();
+      const sourceLabel = t(`settings.locale.source.${localeSource.source}`, locale);
       container.addChild(new Spacer(1));
       container.addChild(
-        new Text(theme.fg("accent", theme.bold("  " + t("settings.section.language", locale))), 1, 0),
+        new Text(
+          theme.fg("dim", "  " + t("settings.locale.source", locale, { source: sourceLabel })),
+          1,
+          0,
+        ),
+      );
+
+      container.addChild(new DynamicBorder((s: string) => theme.fg("borderMuted", s)));
+
+      // === 语言区 ===
+      container.addChild(
+        new Text(theme.fg("accent", theme.bold("  🌐 " + t("settings.section.language", locale))), 1, 0),
       );
 
       const langItems: SelectItem[] = SUPPORTED_LOCALES.map((entry) => ({
@@ -484,7 +504,47 @@ export async function showPackagesPanel(
       langSelector.onCancel = () => safeDone(null);
       container.addChild(langSelector);
 
-      container.addChild(new Spacer(1));
+      container.addChild(new DynamicBorder((s: string) => theme.fg("borderMuted", s)));
+
+      // === J1: 目录缓存区 ===
+      const cacheInfo = getCatalogCacheInfo();
+      container.addChild(
+        new Text(theme.fg("accent", theme.bold("  📦 " + t("settings.section.cache", locale))), 1, 0),
+      );
+      const cacheStatusText = cacheInfo.cached
+        ? t("settings.cache.cached", locale, {
+            count: cacheInfo.count,
+            age: formatRelativeTime(cacheInfo.fetchedAt!, locale),
+          })
+        : t("settings.cache.empty", locale);
+      container.addChild(
+        new Text(theme.fg("dim", `  ${t("settings.cache.status", locale)}: ${cacheStatusText}`), 1, 0),
+      );
+      // 快捷键提示行
+      container.addChild(
+        new Text(
+          theme.fg("muted", `  ${t("settings.cache.refresh", locale)}    ${t("settings.cache.clear", locale)}`),
+          1,
+          0,
+        ),
+      );
+
+      container.addChild(new DynamicBorder((s: string) => theme.fg("borderMuted", s)));
+
+      // === J3: 偏好区 ===
+      container.addChild(
+        new Text(theme.fg("accent", theme.bold("  ⚙️  " + t("settings.section.preferences", locale))), 1, 0),
+      );
+      container.addChild(
+        new Text(theme.fg("muted", "  " + t("settings.preferences.reset", locale)), 1, 0),
+      );
+
+      container.addChild(new DynamicBorder((s: string) => theme.fg("borderMuted", s)));
+
+      // === 提示区 ===
+      container.addChild(
+        new Text(theme.fg("accent", theme.bold("  💡 " + t("settings.section.tip", locale))), 1, 0),
+      );
       container.addChild(
         new Text(theme.fg("muted", "  " + t("settings.tip.config", locale)), 1, 0),
       );
@@ -668,6 +728,20 @@ export async function showPackagesPanel(
       }
 
       if (currentTab === "settings") {
+        // 缓存快捷键
+        if (data === "r") {
+          safeDone({ action: "settings-refresh-catalog" });
+          return;
+        }
+        if (data === "c") {
+          safeDone({ action: "settings-clear-catalog" });
+          return;
+        }
+        // 偏好重置快捷键
+        if (data === "x") {
+          safeDone({ action: "settings-reset" });
+          return;
+        }
         if (data === "g") {
           safeDone({ action: "settings-config" });
           return;

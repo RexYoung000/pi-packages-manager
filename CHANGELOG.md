@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-06-06
+
+### Added
+
+- **Settings 页改造为多区块设置中心（J）**：
+  - **J1. 目录缓存状态展示**：在 Settings tab 新增「📦 目录缓存」区块，
+    实时显示缓存包数、获取时间（“已缓存 247 个包 · 29 小时前”），
+    未缓存时显示“未缓存”。
+  - **J2. 缓存快捷操作**：在缓存区块按 `r` 刷新缓存（强制重新拉取 npm
+    registry），按 `c` 清空缓存。操作完成后留在 Settings tab。
+  - **J3. 偏好重置**：Settings tab 新增「⚙️ 偏好」区块，按 `x` 一键重置
+    所有偏好（包括项目级 `.pi/pi-packages-manager.json` 和全局
+    `~/.pi/agent/extensions/pi-packages-manager/data/preferences.json`
+    中的语言偏好）。有二次确认。当前会话语言不变，下次启动 pi 生效。
+  - **J4. 语言来源展示**：Settings tab 顶部显示当前生效的语言来源
+    （“当前生效: 项目（覆盖全局）” / “当前生效: 全局” / “当前生效: 默认”），
+    让用户知道修改哪个文件能改变语言。
+
+### Improved
+
+- **i18n 插值支持**：`t()` 函数新增可选 `params` 参数（向后兼容），
+  支持 `{count}` / `{age}` 等占位符。新增 `formatRelativeTime()` 工具
+  函数，覆盖 zh-CN / zh-TW / en / ja / ko 五种语言的相对时间格式。
+- **Settings tab 键盘交互**：新增 `r` / `c` / `x` 三个快捷键，用于
+  刷新缓存、清空缓存、重置偏好。
+- **面板状态记忆**：panelLoop 记住用户上次的 tab，操作完成后重新打开
+  仍留在同一 tab（之前总是回到 Installed tab）。
+
 ## [1.2.2] - 2026-06-06
 
 ### Added

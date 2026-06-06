@@ -155,6 +155,50 @@ export function clearCatalogCache(): void {
 }
 
 /**
+ * v1.3.0 J1: 读取 catalog 缓存的元信息（不反序列化 packages 数组）。
+ * 用于 Settings 页展示“已缓存 N 个包 · X 小时前”。
+ */
+export function getCatalogCacheInfo(): {
+  cached: boolean;
+  count: number;
+  fetchedAt: Date | null;
+  sizeBytes: number;
+} {
+  try {
+    if (!existsSync(CACHE_FILE)) {
+      return { cached: false, count: 0, fetchedAt: null, sizeBytes: 0 };
+    }
+    const stat = statSync(CACHE_FILE);
+    // 只解析头部的 fetchedAt + packages.length，避免反序列化整个文件
+    const text = readFileSync(CACHE_FILE, "utf-8");
+    const parsed = JSON.parse(text) as { fetchedAt?: number; packages?: unknown[] };
+    const fetchedAt = typeof parsed.fetchedAt === "number" ? new Date(parsed.fetchedAt) : null;
+    const count = Array.isArray(parsed.packages) ? parsed.packages.length : 0;
+    return {
+      cached: count > 0 && fetchedAt !== null,
+      count,
+      fetchedAt,
+      sizeBytes: stat.size,
+    };
+  } catch {
+    return { cached: false, count: 0, fetchedAt: null, sizeBytes: 0 };
+  }
+}
+
+/**
+ * v1.3.0 J2: 刷新目录缓存（强制重新拉取 npm registry）。返回新缓存信息。
+ */
+export async function refreshCatalogCache(): Promise<{ success: boolean; info: ReturnType<typeof getCatalogCacheInfo> }> {
+  try {
+    catalogCache = null;
+    await fetchFullCatalog(250, true);
+    return { success: true, info: getCatalogCacheInfo() };
+  } catch {
+    return { success: false, info: getCatalogCacheInfo() };
+  }
+}
+
+/**
  * 预取社区插件目录（多查询合并去重，按相关性/下载量排序）。
  * 优先使用 Pi 官方推荐的 pi-package keyword，再补充 extension/skill 和历史关键词。
  */

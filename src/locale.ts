@@ -82,3 +82,74 @@ export function saveLocale(locale: Locale | undefined): void {
 export function getStoredLocale(): Locale | undefined {
   return getLocaleOverride();
 }
+
+/**
+ * v1.3.0 J4: 返回当前生效的语言偏好来源。
+ * - "project": 来自 <cwd>/.pi/pi-packages-manager.json
+ * - "global": 来自 ~/.pi/agent/extensions/pi-packages-manager/data/preferences.json
+ * - "default": 没有偏好，使用 i18n 默认
+ */
+export function getLocaleSource(cwd: string = process.cwd()): {
+  source: "project" | "global" | "default";
+  locale: Locale | undefined;
+  path: string | null;
+} {
+  const projectPath = join(cwd, PROJECT_PREFS_FILE);
+  const projectPrefs = readJsonSafe(projectPath);
+  if (projectPrefs.locale) {
+    return { source: "project", locale: projectPrefs.locale, path: projectPath };
+  }
+
+  const globalPrefs = readJsonSafe(GLOBAL_PREFS_FILE);
+  if (globalPrefs.locale) {
+    return { source: "global", locale: globalPrefs.locale, path: GLOBAL_PREFS_FILE };
+  }
+
+  return { source: "default", locale: undefined, path: null };
+}
+
+/**
+ * v1.3.0 J3: 一键重置所有偏好（语言 + 项目级覆盖）。
+ * 返回被清除的偏好描述，用于 notify。
+ */
+export function resetAllPreferences(cwd: string = process.cwd()): {
+  clearedGlobal: boolean;
+  clearedProject: boolean;
+} {
+  let clearedGlobal = false;
+  let clearedProject = false;
+
+  // 清全局
+  try {
+    if (existsSync(GLOBAL_PREFS_FILE)) {
+      const prefs = readJsonSafe(GLOBAL_PREFS_FILE);
+      if (prefs.locale) {
+        delete prefs.locale;
+        writeJson(GLOBAL_PREFS_FILE, prefs);
+        clearedGlobal = true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 清项目级
+  try {
+    const projectPath = join(cwd, PROJECT_PREFS_FILE);
+    if (existsSync(projectPath)) {
+      const prefs = readJsonSafe(projectPath);
+      if (prefs.locale) {
+        delete prefs.locale;
+        writeJson(projectPath, prefs);
+        clearedProject = true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 重置内存中的 override
+  setLocaleOverride(undefined);
+
+  return { clearedGlobal, clearedProject };
+}

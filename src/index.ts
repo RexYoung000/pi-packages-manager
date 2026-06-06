@@ -27,6 +27,8 @@ import {
   fetchFullCatalog,
   aiSemanticSearch,
   clearCatalogCache,
+  getCatalogCacheInfo,
+  refreshCatalogCache,
   normalizeInstallSource,
   type PackageInfo,
 } from "./api";
@@ -37,7 +39,7 @@ import {
   SUPPORTED_LOCALES,
   t,
 } from "./i18n";
-import { loadStoredLocale, saveLocale } from "./locale";
+import { loadStoredLocale, resetAllPreferences, saveLocale } from "./locale";
 import { showPackagesPanel } from "./ui/panel";
 import { auditPackage, RISK_BADGE, type AuditReport, type RiskLevel } from "./security";
 import { registerTools } from "./tools";
@@ -175,9 +177,25 @@ export default function pluginManager(pi: ExtensionAPI) {
    * 面板主循环。overlay 交互后会返回要执行的动作（详情/搜索/...），动作完成后重新打开面板。
    */
   async function panelLoop(ctx: ExtensionCommandContext) {
+    let lastTab: "installed" | "browse" | "updates" | "settings" = "installed";
     while (true) {
-      const result = await showPackagesPanel(ctx, { locale });
+      const result = await showPackagesPanel(ctx, { locale, initialTab: lastTab });
       if (!result) return;
+
+      // 根据动作推断下次重开时的 tab（让 settings 操作后还能留在 settings）
+      if (
+        result.action === "settings-config" ||
+        result.action === "settings-refresh-catalog" ||
+        result.action === "settings-clear-catalog" ||
+        result.action === "settings-reset" ||
+        result.action === "change-locale"
+      ) {
+        lastTab = "settings";
+      } else if (result.action === "browse-search") {
+        lastTab = "browse";
+      } else if (result.action === "detail") {
+        // 详情视窗不切换 tab，保持上次
+      }
 
       if (result.action === "detail") {
         await showPackageDetail(result.pkg, ctx);
@@ -200,6 +218,46 @@ export default function pluginManager(pi: ExtensionAPI) {
           `${t("settings.locale.changed", result.locale)} ${label}`,
           "success",
         );
+        continue;
+      }
+
+      // v1.3.0 J2: 刷新目录缓存
+      if (result.action === "settings-refresh-catalog") {
+        showLoading(ctx, `${t("settings.cache.refresh", locale)}...`);
+        const refreshResult = await refreshCatalogCache();
+        clearLoading(ctx);
+        if (refreshResult.success) {
+          ctx.ui.notify(
+            t("settings.refreshed", locale, { count: refreshResult.info.count }),
+            "info",
+          );
+        } else {
+          ctx.ui.notify(t("settings.refresh.failed", locale), "warning");
+        }
+        continue;
+      }
+
+      // v1.3.0 J2: 清空目录缓存
+      if (result.action === "settings-clear-catalog") {
+        clearCatalogCache();
+        ctx.ui.notify(t("settings.cleared", locale), "info");
+        continue;
+      }
+
+      // v1.3.0 J3: 重置所有偏好
+      if (result.action === "settings-reset") {
+        const confirmed = await ctx.ui.confirm(
+          t("settings.section.preferences", locale),
+          t("settings.confirm.reset", locale),
+        );
+        if (!confirmed) continue;
+        const resetResult = resetAllPreferences();
+        // 当前会话的语言保持不变，下次启动 pi 才会恢复为默认语言
+        if (resetResult.clearedGlobal || resetResult.clearedProject) {
+          ctx.ui.notify(t("settings.reset.done", locale), "info");
+        } else {
+          ctx.ui.notify(t("settings.reset.noop", locale), "info");
+        }
         continue;
       }
     }

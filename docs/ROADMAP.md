@@ -60,15 +60,25 @@ pi-packages-manager 后续版本迭代计划。按优先级排列，标注工作
 
 ---
 
-### v1.3.0 — 质量 + 扩展
+### v1.3.0 — Settings 扩展（2026-06-06）
+
+- ✅ **J1. 目录缓存状态展示** — Settings tab 新增缓存区块，实时显示包数 + 相对时间（5 语言）
+- ✅ **J2. 缓存快捷操作** — 按 r 刷新缓存、按 c 清空缓存
+- ✅ **J3. 偏好重置** — 按 x 一键重置项目级 + 全局级语言偏好，有二次确认
+- ✅ **J4. 语言来源展示** — Settings tab 顶部显示当前语言来源（project / global / default）
+- ✅ i18n `t()` 新增 params 插值 + `formatRelativeTime()` 工具函数
+- ✅ panelLoop 记住上次 tab，操作后留在同一 tab
+
+---
+
+### v1.3.x — 质量 + 扩展（剩余项）
 
 | # | 特性 | 说明 | 工作量 |
 |---|------|------|--------|
 | **C** | 🌐 pi.dev 数据富化 | 动态检测可用 web fetch 工具（tinyfish / web-fetch 等），搜索结果补全 pi.dev 上的展示数据（截图、分类标签） | 1 天 |
 | **I** | 🧪 扩展测试 | `search.ts`（filter parser、ranking）、`locale.ts`（持久化优先级）、`api.ts`（mock registry）。已有 security.ts 的 14 个测试，补充其他模块 | 1-2 天 |
-| **J** | ⚙️ Settings 扩展 | catalog 缓存状态 + 刷新、项目级 vs 全局级语言开关、偏好重置、pi config 集成 | 1 天 |
 
-**预计工期：3-4 天**
+**预计工期：2-3 天**
 
 ---
 

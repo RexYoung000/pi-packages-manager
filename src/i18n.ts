@@ -344,6 +344,25 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "panel.empty.browse": "正在加载社区插件...（按 Tab 切换）",
     "panel.empty.updates": "正在检查更新...（按 Tab 切换）",
     "settings.section.language": "语言",
+    "settings.section.cache": "目录缓存",
+    "settings.section.preferences": "偏好",
+    "settings.section.tip": "提示",
+    "settings.cache.status": "状态",
+    "settings.cache.cached": "已缓存 {count} 个包 · {age}",
+    "settings.cache.empty": "未缓存",
+    "settings.cache.refresh": "[r] 刷新缓存",
+    "settings.cache.clear": "[c] 清空缓存",
+    "settings.locale.source": "当前生效: {source}",
+    "settings.locale.source.project": "项目（覆盖全局）",
+    "settings.locale.source.global": "全局",
+    "settings.locale.source.default": "默认",
+    "settings.preferences.reset": "[x] 重置所有偏好到默认",
+    "settings.confirm.reset": "这会清除你的语言偏好，恢复为默认。继续？",
+    "settings.refreshed": "已刷新目录缓存（{count} 个包）",
+    "settings.refresh.failed": "刷新缓存失败",
+    "settings.cleared": "已清空目录缓存",
+    "settings.reset.done": "已重置偏好",
+    "settings.reset.noop": "没有需要重置的偏好",
     "settings.tip.config": "提示：在终端运行 `pi config` 可启用 / 禁用扩展、技能、提示词、主题。",
     "settings.locale.changed": "语言已切换为",
   },
@@ -435,6 +454,25 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "panel.empty.browse": "正在載入社群套件...（按 Tab 切換）",
     "panel.empty.updates": "正在檢查更新...（按 Tab 切換）",
     "settings.section.language": "語言",
+    "settings.section.cache": "目錄快取",
+    "settings.section.preferences": "偏好",
+    "settings.section.tip": "提示",
+    "settings.cache.status": "狀態",
+    "settings.cache.cached": "已快取 {count} 個套件 · {age}",
+    "settings.cache.empty": "未快取",
+    "settings.cache.refresh": "[r] 重新整理快取",
+    "settings.cache.clear": "[c] 清空快取",
+    "settings.locale.source": "目前生效: {source}",
+    "settings.locale.source.project": "專案（覆蓋全域）",
+    "settings.locale.source.global": "全域",
+    "settings.locale.source.default": "預設",
+    "settings.preferences.reset": "[x] 重設所有偏好為預設",
+    "settings.confirm.reset": "這會清除你的語言偏好，恢復為預設。繼續？",
+    "settings.refreshed": "已重新整理目錄快取（{count} 個套件）",
+    "settings.refresh.failed": "重新整理快取失敗",
+    "settings.cleared": "已清空目錄快取",
+    "settings.reset.done": "已重設偏好",
+    "settings.reset.noop": "沒有需要重設的偏好",
     "settings.tip.config": "提示：在終端執行 `pi config` 可啟用 / 停用擴充、技能、提示詞、主題。",
     "settings.locale.changed": "語言已切換為",
   },
@@ -526,6 +564,25 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "panel.empty.browse": "Loading community catalog... (press Tab to switch)",
     "panel.empty.updates": "Checking for updates... (press Tab to switch)",
     "settings.section.language": "Language",
+    "settings.section.cache": "Catalog cache",
+    "settings.section.preferences": "Preferences",
+    "settings.section.tip": "Tip",
+    "settings.cache.status": "Status",
+    "settings.cache.cached": "Cached {count} packages · {age}",
+    "settings.cache.empty": "Not cached",
+    "settings.cache.refresh": "[r] Refresh cache",
+    "settings.cache.clear": "[c] Clear cache",
+    "settings.locale.source": "Active: {source}",
+    "settings.locale.source.project": "Project (overrides global)",
+    "settings.locale.source.global": "Global",
+    "settings.locale.source.default": "Default",
+    "settings.preferences.reset": "[x] Reset all preferences to defaults",
+    "settings.confirm.reset": "This will clear your language preference and restore defaults. Continue?",
+    "settings.refreshed": "Catalog refreshed ({count} packages)",
+    "settings.refresh.failed": "Failed to refresh catalog",
+    "settings.cleared": "Catalog cache cleared",
+    "settings.reset.done": "Preferences reset",
+    "settings.reset.noop": "No preferences to reset",
     "settings.tip.config": "Tip: run `pi config` in your terminal to enable/disable extensions, skills, prompts, and themes.",
     "settings.locale.changed": "Language switched to",
   },
@@ -617,6 +674,25 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "panel.empty.browse": "コミュニティカタログを読み込み中...（Tab で切替）",
     "panel.empty.updates": "更新を確認中...（Tab で切替）",
     "settings.section.language": "言語",
+    "settings.section.cache": "カタログキャッシュ",
+    "settings.section.preferences": "プリファレンス",
+    "settings.section.tip": "ヒント",
+    "settings.cache.status": "状態",
+    "settings.cache.cached": "キャッシュ済み {count} パッケージ · {age}",
+    "settings.cache.empty": "キャッシュなし",
+    "settings.cache.refresh": "[r] キャッシュを更新",
+    "settings.cache.clear": "[c] キャッシュをクリア",
+    "settings.locale.source": "有効: {source}",
+    "settings.locale.source.project": "プロジェクト（グローバル上書き）",
+    "settings.locale.source.global": "グローバル",
+    "settings.locale.source.default": "デフォルト",
+    "settings.preferences.reset": "[x] すべてのプリファレンスをデフォルトに戻す",
+    "settings.confirm.reset": "言語プリファレンスをクリアし、デフォルトに戻します。続行しますか？",
+    "settings.refreshed": "カタログキャッシュを更新しました（{count} パッケージ）",
+    "settings.refresh.failed": "カタログの更新に失敗しました",
+    "settings.cleared": "カタログキャッシュをクリアしました",
+    "settings.reset.done": "プリファレンスをリセットしました",
+    "settings.reset.noop": "リセットするプリファレンスはありません",
     "settings.tip.config": "ヒント: ターミナルで `pi config` を実行して拡張・スキル・プロンプト・テーマを制御します。",
     "settings.locale.changed": "言語を切り替えました:",
   },
@@ -708,6 +784,25 @@ const UI_TEXT: Record<string, Record<string, string>> = {
     "panel.empty.browse": "커뮤니티 카탈로그를 로드 중...（Tab으로 전환）",
     "panel.empty.updates": "업데이트 확인 중...（Tab으로 전환）",
     "settings.section.language": "언어",
+    "settings.section.cache": "카탈로그 캐시",
+    "settings.section.preferences": "환경설정",
+    "settings.section.tip": "팁",
+    "settings.cache.status": "상태",
+    "settings.cache.cached": "캐시됨 {count}개 패키지 · {age}",
+    "settings.cache.empty": "캐시 없음",
+    "settings.cache.refresh": "[r] 캐시 새로고침",
+    "settings.cache.clear": "[c] 캐시 비우기",
+    "settings.locale.source": "활성: {source}",
+    "settings.locale.source.project": "프로젝트 (글로벌 덮어쓰기)",
+    "settings.locale.source.global": "글로벌",
+    "settings.locale.source.default": "기본",
+    "settings.preferences.reset": "[x] 모든 환경설정 기본값으로 초기화",
+    "settings.confirm.reset": "언어 환경설정을 지우고 기본값으로 되돌립니다. 계속하시겠습니까?",
+    "settings.refreshed": "카탈로그 캐시 새로고침됨 ({count}개 패키지)",
+    "settings.refresh.failed": "카탈로그 새로고침 실패",
+    "settings.cleared": "카탈로그 캐시 비워짐",
+    "settings.reset.done": "환경설정 초기화됨",
+    "settings.reset.noop": "초기화할 환경설정이 없습니다",
     "settings.tip.config": "팁: 터미널에서 `pi config`를 실행하여 확장/스킬/프롬프트/테마를 활성화/비활성화하세요.",
     "settings.locale.changed": "언어가 다음으로 전환되었습니다:",
   },
@@ -734,7 +829,50 @@ function resolveUILocale(locale?: Locale): string {
   return "en";
 }
 
-export function t(key: string, locale?: Locale): string {
+export function t(key: string, locale?: Locale, params?: Record<string, string | number>): string {
   const resolved = resolveUILocale(locale);
-  return UI_TEXT[resolved]?.[key] || UI_TEXT["en"]?.[key] || key;
+  let text = UI_TEXT[resolved]?.[key] || UI_TEXT["en"]?.[key] || key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+  }
+  return text;
+}
+
+/**
+ * v1.3.0 J1: 相对时间格式化。根据 locale 输出 “11 小时前” / "11 hours ago" 等。
+ */
+export function formatRelativeTime(date: Date, locale?: Locale): string {
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 0) return t("settings.cache.empty", locale);
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  const resolved = resolveUILocale(locale);
+  if (resolved === "zh-CN" || resolved === "zh-TW") {
+    if (seconds < 60) return "刚刚";
+    if (minutes < 60) return `${minutes} 分钟前`;
+    if (hours < 24) return `${hours} 小时前`;
+    return `${days} 天前`;
+  }
+  if (resolved === "ja") {
+    if (seconds < 60) return "たった今";
+    if (minutes < 60) return `${minutes} 分前`;
+    if (hours < 24) return `${hours} 時間前`;
+    return `${days} 日前`;
+  }
+  if (resolved === "ko") {
+    if (seconds < 60) return "방금";
+    if (minutes < 60) return `${minutes}분 전`;
+    if (hours < 24) return `${hours}시간 전`;
+    return `${days}일 전`;
+  }
+  // en + default
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hr${hours === 1 ? "" : "s"} ago`;
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
