@@ -1,6 +1,6 @@
 {
   "name": "pi-packages-manager",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Claude-style Pi packages manager: browse, search, install, update, and remove Pi packages from inside Pi.",
   "type": "module",
   "keywords": [
@@ -33,7 +33,8 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "image": "https://raw.githubusercontent.com/RexYoung000/pi-packages-manager/main/preview.png"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
