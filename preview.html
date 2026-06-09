@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800,height=500">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 800px; height: 500px;
+    background: #0d1117;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+    color: #c9d1d9;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px;
+  }
+  .header .title { color: #58a6ff; font-weight: bold; }
+  .header .badge { 
+    background: #238636; color: #fff; font-size: 11px; 
+    padding: 2px 8px; border-radius: 10px; 
+  }
+  .tabs {
+    display: flex; gap: 0;
+    background: #0d1117;
+    border-bottom: 1px solid #30363d;
+    padding: 0 16px;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #8b949e;
+    border-bottom: 2px solid transparent;
+    cursor: default;
+  }
+  .tab.active {
+    color: #f0f6fc;
+    border-bottom-color: #f78166;
+  }
+  .tab .count {
+    background: #30363d; color: #8b949e;
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    margin-left: 4px;
+  }
+  .main {
+    display: flex; flex: 1; overflow: hidden;
+  }
+  .list {
+    width: 260px;
+    border-right: 1px solid #30363d;
+    overflow-y: hidden;
+  }
+  .search-bar {
+    padding: 8px 12px;
+    border-bottom: 1px solid #30363d;
+  }
+  .search-bar input {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+  .search-bar input::placeholder { color: #484f58; }
+  .pkg-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #21262d;
+    font-size: 12px;
+    cursor: default;
+  }
+  .pkg-item:hover, .pkg-item.selected { background: #1c2128; }
+  .pkg-item.selected { border-left: 3px solid #f78166; }
+  .pkg-item .name { color: #58a6ff; font-weight: bold; }
+  .pkg-item .desc { color: #8b949e; margin-top: 2px; font-size: 11px; }
+  .pkg-item .meta { color: #484f58; font-size: 10px; margin-top: 3px; }
+  .detail {
+    flex: 1; padding: 16px; overflow: hidden;
+  }
+  .detail h2 { color: #58a6ff; font-size: 18px; margin-bottom: 4px; }
+  .detail .version { color: #8b949e; font-size: 12px; margin-bottom: 12px; }
+  .detail .desc { color: #c9d1d9; font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+  .resources { display: flex; gap: 8px; margin-bottom: 14px; }
+  .resource-tag {
+    font-size: 11px; padding: 3px 10px;
+    border-radius: 4px; background: #1c2128; color: #8b949e;
+    border: 1px solid #30363d;
+  }
+  .resource-tag.ext { border-color: #58a6ff; color: #58a6ff; }
+  .audit-box {
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 6px; padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+  .audit-box .label { font-size: 11px; color: #8b949e; margin-bottom: 6px; }
+  .audit-result { display: flex; align-items: center; gap: 8px; }
+  .risk-badge {
+    font-size: 12px; font-weight: bold; padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .risk-badge.safe { background: #1a3a2a; color: #3fb950; }
+  .risk-badge.low { background: #2a351a; color: #d29922; }
+  .actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .btn {
+    padding: 6px 14px; font-size: 12px;
+    border-radius: 4px; border: 1px solid #30363d;
+    background: #21262d; color: #c9d1d9;
+    cursor: default;
+  }
+  .btn.primary { background: #238636; border-color: #2ea043; color: #fff; }
+  .btn.danger { color: #f85149; border-color: #f85149; }
+  .help-bar {
+    background: #161b22; border-top: 1px solid #30363d;
+    padding: 6px 16px; display: flex; gap: 16px;
+    font-size: 10px; color: #484f58;
+  }
+  .help-bar span { color: #8b949e; }
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="title">📦 Pi Packages Manager</span>
+  <span class="badge">v1.3.0</span>
+  <span style="color:#8b949e;margin-left:auto">Tab 切换 · / 搜索 · i 安装</span>
+</div>
+<div class="tabs">
+  <div class="tab active">📋 浏览 <span class="count">48</span></div>
+  <div class="tab">📥 已安装 <span class="count">6</span></div>
+  <div class="tab">⬆️ 更新 <span class="count">2</span></div>
+  <div class="tab">⚙️ 设置</div>
+</div>
+<div class="main">
+  <div class="list">
+    <div class="search-bar">
+      <input placeholder="搜索 pi 扩展..." value="budge">
+    </div>
+    <div class="pkg-item">
+      <div class="name">pi-agent-budget</div>
+      <div class="desc">AI coding cost tracker with budget limits</div>
+      <div class="meta">⭐ 0.1.2 · rex_young · 🟢 safe</div>
+    </div>
+    <div class="pkg-item selected">
+      <div class="name">pi-code-indexer</div>
+      <div class="desc">AI 驱动的代码知识图谱</div>
+      <div class="meta">⭐ 0.4.1 · rex_young · 🟢 safe</div>
+    </div>
+    <div class="pkg-item">
+      <div class="name">pi-mcp-adapter</div>
+      <div class="desc">MCP adapter for Pi coding agent</div>
+      <div class="meta">⭐ 2.9.0 · earendil · 🟡 low</div>
+    </div>
+    <div class="pkg-item">
+      <div class="name">pi-tinyfish-tools</div>
+      <div class="desc">Web search, fetch & browser automation</div>
+      <div class="meta">⭐ 0.7.0 · earendil · 🟢 safe</div>
+    </div>
+  </div>
+  <div class="detail">
+    <h2>pi-code-indexer</h2>
+    <div class="version">v0.4.1 · rex_young · MIT · 📅 2026-06-09</div>
+    <div class="desc">AI 驱动的本地代码索引。让 AI 编程助手更快、更准地理解和修改代码，支持 TS/JS、Python、Go、Rust、Java、C/C++。</div>
+    <div class="resources">
+      <span class="resource-tag ext">🧩 extension</span>
+      <span class="resource-tag">🎯 skill</span>
+      <span class="resource-tag">📦 npm</span>
+    </div>
+    <div class="audit-box">
+      <div class="label">🔍 安全审计</div>
+      <div class="audit-result">
+        <span class="risk-badge safe">🟢 safe</span>
+        <span style="color:#8b949e;font-size:11px">未发现危险模式 · 3 个依赖 · 183KB</span>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="btn primary">⬇️ 安装</div>
+      <div class="btn">🔍 审计</div>
+      <div class="btn danger">🗑️ 卸载</div>
+    </div>
+  </div>
+</div>
+<div class="help-bar">
+  <span>Tab</span> 切换标签
+  <span>↑↓</span> 导航
+  <span>Enter</span> 详情
+  <span>/</span> 搜索
+  <span>i</span> 安装
+  <span>a</span> 审计
+  <span>Esc</span> 关闭
+</div>
+</body>
+</html>
