@@ -1,6 +1,6 @@
 {
   "name": "pi-packages-manager",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Claude-style Pi packages manager: browse, search, install, update, and remove Pi packages from inside Pi.",
   "type": "module",
   "keywords": [

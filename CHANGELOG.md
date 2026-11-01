@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-11-01
+
+### Improved
+
+- **工具输出统一截断**：`packages_search` / `packages_detail` / `packages_audit` /
+  `packages_install` 四个工具原本把完整结果直接交给模型，社区包一多或 README
+  一长就可能撞上上下文上限。现在统一按 pi 官方上限（50KB / 2000 行）截断，并在
+  超出时提示模型收窄查询。
+
 ## [1.4.0] - 2026-06-15
 
 ### Added

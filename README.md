@@ -5,7 +5,7 @@ Pi packages without leaving Pi. Inspired by the Claude Code package UX.
 
 [English](README.md) · [简体中文](docs/README.zh-CN.md) · [Pi Discussion](https://github.com/earendil-works/pi/discussions/5322) · [npm](https://www.npmjs.com/package/pi-packages-manager)
 
-![status](https://img.shields.io/badge/status-1.4.0-blue)
+![status](https://img.shields.io/badge/status-1.4.1-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
